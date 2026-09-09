@@ -1,0 +1,30 @@
+graph TD
+  subgraph Ingestion[Ingestion]
+    A[Source DB and document storage] -->|Read only, checkpointed import| B[Connector and ingestion queue]
+    B --> C[File validation and safe conversion]
+    C -->|Originals, hashes and page references| D[Private evidence storage]
+    C --> E[Native text extraction and OCR]
+    E --> F[Field extraction and evidence mapping]
+    F --> G[Validation, identity and duplicate checks]
+    G --> H[Human review and approval]
+  end
+  subgraph Registry[Consent registry]
+    H -->|Approved evidence and scoped records| I[Consent API and policy rules]
+    I --> J[(db-consent: records, history, outbox)]
+    D -.->|Restricted evidence access| H
+  end
+  subgraph Use[Portal and enforcement]
+    K[Identity provider and verified account link] --> L[PMP portal]
+    L -->|View and withdraw by purpose| I
+    J --> M[Outbox delivery worker]
+    M -->|Versioned events, retries, acknowledgments| N[Downstream purpose enforcement]
+  end
+  O[Access control, audit and monitoring] -.-> B
+  O -.-> I
+  O -.-> M
+  classDef store fill:#dbeafe,stroke:#2563eb,color:#172554
+  classDef review fill:#fef3c7,stroke:#d97706,color:#451a03
+  classDef portal fill:#dcfce7,stroke:#16a34a,color:#14532d
+  class D,J store
+  class G,H review
+  class K,L,N portal

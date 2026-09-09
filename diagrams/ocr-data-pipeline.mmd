@@ -1,0 +1,21 @@
+graph TD
+  A[Database files or folder] --> C[FastAPI ingestion API]
+  B[React upload] --> C
+  C --> D[Private originals]
+  C --> E[(db-consent jobs and hashes)]
+  E --> F[Python document worker]
+  F --> G[Native PDF text and widgets]
+  F --> H[Tesseract OCR and page images]
+  G --> I[Label required fields]
+  H --> I
+  J[Optional Google Document AI] -. Managed OCR upgrade .-> I
+  I --> K[Validate values and evidence]
+  K --> L[(db-consent labeled records)]
+  L --> M[Simple React consent page]
+  D -->|Page evidence| M
+  classDef app fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e
+  classDef store fill:#ede9fe,stroke:#7c3aed,color:#2e1065
+  classDef managed fill:#dcfce7,stroke:#16a34a,color:#14532d
+  class B,C,F,I,K,M app
+  class D,E,L store
+  class H,J managed
