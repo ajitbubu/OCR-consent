@@ -28,12 +28,19 @@ def processor_name() -> str:
 
 
 def tesseract_ocr(image: Image.Image) -> OCRResult:
-    data = pytesseract.image_to_data(
-        image,
-        config="--psm 3",
-        output_type=pytesseract.Output.DICT,
-        timeout=40,
-    )
+    try:
+        data = pytesseract.image_to_data(
+            image,
+            config="--psm 3",
+            output_type=pytesseract.Output.DICT,
+            timeout=40,
+        )
+    except pytesseract.TesseractNotFoundError as exc:
+        raise RuntimeError(
+            "Tesseract 5 is not installed. Install the binary "
+            "(macOS: 'brew install tesseract', Debian/Ubuntu: "
+            "'apt install tesseract-ocr'), or set OCR_PROVIDER=google-vision."
+        ) from exc
     lines: dict[tuple[int, int, int], list[str]] = {}
     scores: list[float] = []
     for index, word in enumerate(data["text"]):
@@ -60,8 +67,17 @@ def _google_client(endpoint: str):
         raise RuntimeError(
             "Google Cloud Vision is not installed. Install backend/requirements.txt."
         ) from exc
+    from google.auth.exceptions import DefaultCredentialsError
+
     options = {"api_endpoint": endpoint} if endpoint else None
-    return vision.ImageAnnotatorClient(client_options=options)
+    try:
+        return vision.ImageAnnotatorClient(client_options=options)
+    except DefaultCredentialsError as exc:
+        raise RuntimeError(
+            "Google Cloud Vision credentials were not found. Authenticate with "
+            "your own Google account using 'gcloud auth application-default "
+            "login', or set OCR_PROVIDER=tesseract to run OCR locally."
+        ) from exc
 
 
 def google_document_ocr(image: Image.Image) -> OCRResult:

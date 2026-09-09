@@ -17,23 +17,44 @@ Missing or conflicting values remain explicit. Under the configured business rul
 
 ## Run locally
 
-Requirements: Python 3.12+, Node.js, npm and either Google Cloud Vision credentials or Tesseract 5.
+Requirements: Python 3.12+, Node.js and npm. Every developer sets up their own OCR provider; no credentials are shared or stored in this repository.
 
 ```bash
 python3.12 -m venv .venv
 .venv/bin/pip install -r backend/requirements-dev.txt
 cd frontend && npm install && cd ..
+cp .env.example .env
 ```
 
-For Google Cloud Vision, enable the Vision API and provide Application Default Credentials. Then start the API with Google document OCR and the English handwriting hint:
+`.env` is loaded on startup. Real environment variables take precedence over it, so an inline `OCR_PROVIDER=... uvicorn ...` still overrides the file.
+
+### Choose an OCR provider
+
+**Tesseract (default, local, no cloud account).** Install the binary; the Python package alone is not enough:
 
 ```bash
-OCR_PROVIDER=google-vision \
-OCR_LANGUAGE_HINTS=en-t-i0-handwrit \
+brew install tesseract            # macOS
+sudo apt install tesseract-ocr    # Debian/Ubuntu
+```
+
+**Google Cloud Vision (the pilot configuration).** Each person authenticates as themselves against the shared project. Do not create, commit or pass around a service account key:
+
+```bash
+gcloud auth application-default login
+gcloud services enable vision.googleapis.com --project YOUR_PROJECT
+```
+
+Then set `OCR_PROVIDER=google-vision` in your `.env`. The project needs billing enabled.
+
+### Start the API
+
+```bash
 .venv/bin/uvicorn app.main:app --app-dir backend --reload --port 8001
 ```
 
-Set `GOOGLE_CLOUD_VISION_ENDPOINT=us-vision.googleapis.com` or `eu-vision.googleapis.com` when regional processing is required. Set `OCR_PROVIDER=tesseract` for fully local OCR. Google failures stop the processing run unless `OCR_GOOGLE_FALLBACK=true` is explicitly configured.
+Set `GOOGLE_CLOUD_VISION_ENDPOINT=us-vision.googleapis.com` or `eu-vision.googleapis.com` when regional processing is required. Google failures stop the processing run unless `OCR_GOOGLE_FALLBACK=true` is explicitly configured.
+
+A document that fails to process records the reason on its own record, visible in the page detail. `Tesseract 5 is not installed` and `Google Cloud Vision credentials were not found` both mean the step above was skipped.
 
 Start the React page in a second terminal:
 
